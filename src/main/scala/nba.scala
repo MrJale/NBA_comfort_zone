@@ -1,11 +1,8 @@
 import org.apache.spark.{SparkContext, SparkConf}
-//import org.apache.spark.mllib.clustering.{KMeans, KMeansModel}
-//import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.sql._
 import org.apache.log4j._
 import org.apache.spark.ml.clustering.KMeans
-//import org.apache.spark.ml.evaluation.ClusteringEvaluator
 
 object NBA_kmeans{
 
@@ -46,16 +43,6 @@ object NBA_kmeans{
 
     val df_player = df.filter($"player_name"===args(1))
 
-    /*val assembler = new VectorAssembler().
-      setInputCols(Array("shot_clock", "shot_dist", "close_def_dist")).
-      setOutputCol("features")
-    val traindata = assembler.transform(df_player)
-      .select("features")*/
-
-    /*val kmeans = new KMeans().setK(4).setSeed(1L)
-    val model = kmeans.fit(df_player)
-    val predictions = model.transform(df_player)*/
-
     val traindata = df_player.na.drop()
     val cols = Array("SHOT_CLOCK","SHOT_DIST","CLOSE_DEF_DIST")
     val assembler = new VectorAssembler().setInputCols(cols).setOutputCol("features")
@@ -73,11 +60,10 @@ object NBA_kmeans{
 
     val df1 = predictDf.groupBy("cluster").agg("SHOT_RESULT"->"count").orderBy("cluster").withColumnRenamed("count(SHOT_RESULT)","total")
     val df2 = predictDf.filter($"SHOT_RESULT"==="made").groupBy("cluster").agg("SHOT_RESULT"->"count").orderBy("cluster").withColumnRenamed("count(SHOT_RESULT)","made")
-    //df1.show(10)
-    //df2.show(10)
+
     val df3 = df1.join(df2,Seq("cluster")).orderBy(("cluster"))
     val df4 = df3.withColumn("hit_rate", col = df3("made")/df3("total"))
-    //df4.show(10)
+
     val df5 = df4.orderBy(df4("hit_rate").desc)
     df5.show()
 
